@@ -1,8 +1,28 @@
 import { NextResponse } from 'next/server';
 
+const MAX_TEXT_LENGTH = 50_000;
+const MAX_NAME_LENGTH = 120;
+const MAX_EMAIL_LENGTH = 254;
+const MAX_PHONE_LENGTH = 40;
+const MAX_ATTACHMENTS = 5;
+
+function escapeHtml(value: string) {
+	return value.replace(/[&<>"']/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[character] ?? character);
+}
+
+function boundedString(value: unknown, maxLength: number) {
+	return typeof value === 'string' ? value.trim().slice(0, maxLength) : '';
+}
+
 export async function POST(request: Request) {
 	try {
-		const { text, anonymous, name, email, phone, attachments } = await request.json();
+		const body = await request.json();
+		const text = boundedString(body.text, MAX_TEXT_LENGTH);
+		const anonymous = body.anonymous === true;
+		const name = boundedString(body.name, MAX_NAME_LENGTH);
+		const email = boundedString(body.email, MAX_EMAIL_LENGTH);
+		const phone = boundedString(body.phone, MAX_PHONE_LENGTH);
+		const attachments = Array.isArray(body.attachments) ? body.attachments.slice(0, MAX_ATTACHMENTS) : [];
 
 		if (!text || typeof text !== 'string' || text.trim().length === 0) {
 			return NextResponse.json({ error: 'Message is required' }, { status: 400 });
@@ -22,7 +42,11 @@ export async function POST(request: Request) {
 			? '[INTHEMAKING] Anonymous Note'
 			: `[INTHEMAKING] Note from ${name || 'Unknown'}`;
 
-		const attachmentCount = attachments?.length || 0;
+		if (email && !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email)) {
+			return NextResponse.json({ error: 'Invalid email address' }, { status: 400 });
+		}
+
+		const attachmentCount = attachments.length;
 
 		const htmlBody = `
 			<div style="font-family: 'Courier New', monospace; color: #333; max-width: 600px;">
@@ -32,14 +56,14 @@ export async function POST(request: Request) {
 				${
 					!anonymous
 						? `<div style="border-left: 2px solid #eee; padding-left: 16px; margin-bottom: 24px; font-size: 13px; color: #666;">
-						${name ? `<p><strong>Name:</strong> ${name}</p>` : ''}
-						${email ? `<p><strong>Email:</strong> ${email}</p>` : ''}
-						${phone ? `<p><strong>Phone:</strong> ${phone}</p>` : ''}
+						${name ? `<p><strong>Name:</strong> ${escapeHtml(name)}</p>` : ''}
+						${email ? `<p><strong>Email:</strong> ${escapeHtml(email)}</p>` : ''}
+						${phone ? `<p><strong>Phone:</strong> ${escapeHtml(phone)}</p>` : ''}
 					</div>`
 						: ''
 				}
 				<div style="white-space: pre-wrap; font-size: 14px; line-height: 1.7; color: #222;">
-					${text.trim().replace(/</g, '&lt;').replace(/>/g, '&gt;')}
+					${escapeHtml(text)}
 				</div>
 				${
 					attachmentCount > 0

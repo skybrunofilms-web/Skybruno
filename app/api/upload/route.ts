@@ -1,15 +1,21 @@
+import { timingSafeEqual } from 'node:crypto';
 import { put } from '@vercel/blob';
 import { type NextRequest, NextResponse } from 'next/server';
 
 const VALID_CATEGORIES = ['bloodline', 'trees', 'trash', 'food', 'ny'];
-const UPLOAD_PASSWORD = process.env.UPLOAD_PASSWORD || 'inthemaking2025';
+const UPLOAD_PASSWORD = process.env.UPLOAD_PASSWORD?.trim();
 
 export async function POST(request: NextRequest) {
 	try {
 		const formData = await request.formData();
-		const password = formData.get('password') as string;
+		if (!UPLOAD_PASSWORD || UPLOAD_PASSWORD.length < 32) {
+			return NextResponse.json({ error: 'Upload authentication is not configured' }, { status: 503 });
+		}
 
-		if (password !== UPLOAD_PASSWORD) {
+		const passwordValue = formData.get('password');
+		const password = typeof passwordValue === 'string' ? passwordValue : '';
+
+		if (password.length !== UPLOAD_PASSWORD.length || !timingSafeEqual(Buffer.from(password), Buffer.from(UPLOAD_PASSWORD))) {
 			return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 		}
 

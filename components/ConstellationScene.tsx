@@ -203,8 +203,9 @@ function ClusterImage({
 
 	const actualScale = useMemo(() => {
 		if (!texture || !texture.image) return new THREE.Vector3(baseWidth, baseHeight, 1);
-		const imgW = texture.image.width || texture.image.naturalWidth || 1;
-		const imgH = texture.image.height || texture.image.naturalHeight || 1;
+		const image = texture.image as { width?: number; height?: number; naturalWidth?: number; naturalHeight?: number };
+		const imgW = image.width || image.naturalWidth || 1;
+		const imgH = image.height || image.naturalHeight || 1;
 		const aspect = imgW / imgH;
 		if (aspect > 1) {
 			return new THREE.Vector3(baseWidth, baseWidth / aspect, 1);
