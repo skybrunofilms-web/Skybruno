@@ -8,6 +8,7 @@ import ShadowTitle from '@/components/ShadowTitle';
 import ScrollingBanner from '@/components/ScrollingBanner';
 import Menu from '@/components/Menu';
 import type { GalleryTheme } from '@/components/GalleryOverlay';
+import SplashScreen from '@/components/SplashScreen';
 
 const ConstellationScene = dynamic(() => import('@/components/ConstellationScene'), { ssr: false });
 const GalleryOverlay = dynamic(() => import('@/components/GalleryOverlay'), { ssr: false });
@@ -153,8 +154,10 @@ export default function Home() {
 			style={{ backgroundColor: '#ffffff', color: '#111111' }}
 			onClick={handleBackgroundClick}
 		>
-			{/* 3D constellation scene */}
-			<ConstellationScene
+				<SplashScreen />
+
+				{/* 3D constellation scene */}
+				<ConstellationScene
 				themes={galleryThemes}
 				onSelectTheme={handleSelectTheme}
 				focusedTheme={focusedId}
